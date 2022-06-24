@@ -221,9 +221,8 @@ def main():
         control_output(results, args)
 
     logging.info('Парсер завершил работу.')
-    
+
 
 if __name__ == '__main__':
 
     main()
-
