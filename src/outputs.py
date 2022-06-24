@@ -9,22 +9,21 @@ from constants import BASE_DIR, DATETIME_FORMAT
 
 def control_output(results, cli_args):
     """Выбираем обработчик вывода в зависимости от входного аргумента."""
-    output = cli_args.output
-    if output == 'pretty':
-        pretty_output(results)
-    elif output == 'file':
-        file_output(results, cli_args)
-    else:
-        default_output(results)
+
+    output = 'default'
+    if cli_args.output:
+        output = cli_args.output
+
+    OUTPUT_METHODS[output](results, cli_args)
 
 
-def default_output(results):
+def default_output(results, cli_args):
     """Вывод в консоль."""
     for row in results:
         print(*row)
 
 
-def pretty_output(results):
+def pretty_output(results, cli_args):
     """Вывод в консоль в табличном виде."""
     table = PrettyTable()
     table.field_names = results[0]
@@ -48,3 +47,10 @@ def file_output(results, cli_args):
         writer.writerows(results)
 
     logging.info(f'Файл с результатами был сохранён: {file_path}')
+
+
+OUTPUT_METHODS = {
+    'pretty': pretty_output,
+    'file': file_output,
+    'default': default_output
+}

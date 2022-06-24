@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 MAIN_DOC_URL = 'https://docs.python.org/3/'
 PEP_URL = 'https://peps.python.org/'
 
