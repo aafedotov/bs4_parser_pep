@@ -1,5 +1,7 @@
 import re
 import logging
+import warnings
+
 
 from urllib.parse import urljoin
 from configs import configure_argument_parser, configure_logging
@@ -10,7 +12,10 @@ import requests_cache
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from constants import BASE_DIR, MAIN_DOC_URL, PEP_URL
+from constants import BASE_DIR, MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS
+
+
+warnings.filterwarnings("ignore")
 
 
 def whats_new(session):
@@ -28,7 +33,7 @@ def whats_new(session):
     sections_by_python = div_with_ul.find_all('li',
                                               attrs={'class': 'toctree-l1'})
 
-    results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
+    results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
 
     for section in tqdm(sections_by_python, desc='Parsing'):
         version_a_tag = find_tag(section, 'a')
@@ -111,39 +116,83 @@ def download(session):
     logging.info(f'Архив был загружен и сохранён: {archive_path}')
 
 
-def pep_parser(session):
+def pep(session):
 
     response = get_response(session, PEP_URL)
     if response is None:
         return
 
-    result = [('Ссылка на документацию', 'Статус')]
+    result = [('Статус', 'Количество')]
     soup = BeautifulSoup(response.text, features='lxml')
     all_tables = soup.find('section', id='numerical-index')
     all_tables = all_tables.find_all('tr')
-    i = 0
-    for table in all_tables:
+    pep_count = 0
+    status_count = {
+        'Active': 0, 'Draft': 0, 'Final': 0, 'Provisional': 0,
+        'Rejected': 0, 'Superseded': 0, 'Withdrawn': 0, 'Deferred': 0,
+        'April Fool!': 0, 'Accepted': 0
+    }
+
+    for table in tqdm(all_tables, desc='Parsing'):
 
         rows = table.find_all('td')
-        i = 0
-        status = ''
+        all_status = ''
         link = ''
-        for row in rows:
+        for i, row in enumerate(rows):
+
             if i == 0:
-                status = row.text
+                all_status = row.text
+                if len(all_status) == 2:
+                    all_status = all_status[1]
+                else:
+                    all_status = None
+
             if i == 1:
                 link_tag = find_tag(row, 'a')
                 link = link_tag['href']
-            if i == 2:
                 break
-            i += 1
-        result.append((link, status))
 
-        # status = rows[1].text
-        # link_tag = find_tag(rows[2], 'a')
-        # link = link_tag['href']
-        # result.append((link, status))
+        link = urljoin(PEP_URL, link)
+        response = get_response(session, link)
+        soup = BeautifulSoup(response.text, features='lxml')
+        dl = find_tag(soup, 'dl', attrs={'class': 'rfc2822 field-list simple'})
+        pattern = (
+                r'.*(?P<status>Active|Draft|Final|Provisional|Rejected|'
+                r'Superseded|Withdrawn|Deferred|April Fool!|Accepted)'
+            )
+        re_text = re.search(pattern, dl.text)
+        status = None
+        if re_text:
+            status = re_text.group('status')
+        if all_status:
+            if EXPECTED_STATUS[all_status] != status:
+                if status == 'April Fool!':
+                    logging.info(
+                        f'Апрельская шутка!:\n{link}\n'
+                        f'Статус в карточке: {status}\n'
+                    )
+                else:
+                    logging.info(
+                    f'Несовпадающие статусы:\n{link}\n'
+                    f'Статус в карточке: {status}\n'
+                    f'Ожидаемый статус: {EXPECTED_STATUS[all_status]}'
+                    )
+        else:
+            if status not in ('Active', 'Draft'):
+                logging.info(
+                    f'Несовпадающие статусы:\n{link}\n'
+                    f'Статус в карточке: {status}\n'
+                    f'Ожидаемые статусы: ["Active", "Draft"]'
+                )
+        if all_status == 'P':
+            logging.info('P!!!')
+        pep_count += 1
+        status_count[status] += 1
 
+    for status in status_count:
+        result.append((status, status_count[status]))
+
+    result.append(('Total', pep_count))
     return result
 
 
@@ -151,7 +200,7 @@ MODE_TO_FUNCTION = {
     'whats-new': whats_new,
     'latest-versions': latest_versions,
     'download': download,
-    'pep': pep_parser
+    'pep': pep
 }
 
 
