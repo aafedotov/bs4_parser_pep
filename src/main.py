@@ -164,28 +164,24 @@ def pep(session):
         status = None
         if re_text:
             status = re_text.group('status')
-        if all_status:
-            if EXPECTED_STATUS[all_status] != status:
-                if status == 'April Fool!':
-                    logging.info(
-                        f'Апрельская шутка!:\n{link}\n'
-                        f'Статус в карточке: {status}\n'
-                    )
-                else:
-                    logging.info(
-                    f'Несовпадающие статусы:\n{link}\n'
+        if all_status and EXPECTED_STATUS[all_status] != status:
+            if status == 'April Fool!':
+                logging.info(
+                    f'Апрельская шутка!:\n{link}\n'
                     f'Статус в карточке: {status}\n'
-                    f'Ожидаемый статус: {EXPECTED_STATUS[all_status]}'
-                    )
-        else:
-            if status not in ('Active', 'Draft'):
+                )
+            else:
                 logging.info(
                     f'Несовпадающие статусы:\n{link}\n'
                     f'Статус в карточке: {status}\n'
-                    f'Ожидаемые статусы: ["Active", "Draft"]'
+                    f'Ожидаемый статус: {EXPECTED_STATUS[all_status]}'
                 )
-        if all_status == 'P':
-            logging.info('P!!!')
+        elif not all_status and status not in ('Active', 'Draft'):
+            logging.info(
+                f'Несовпадающие статусы:\n{link}\n'
+                f'Статус в карточке: {status}\n'
+                f'Ожидаемые статусы: ["Active", "Draft"]'
+            )
         pep_count += 1
         status_count[status] += 1
 
@@ -230,3 +226,4 @@ def main():
 if __name__ == '__main__':
 
     main()
+
