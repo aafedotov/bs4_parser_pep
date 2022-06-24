@@ -136,16 +136,13 @@ def pep(session):
     for table in tqdm(all_tables, desc='Parsing'):
 
         rows = table.find_all('td')
-        all_status = ''
-        link = ''
+        all_status = None
+        link = None
         for i, row in enumerate(rows):
 
-            if i == 0:
-                all_status = row.text
-                if len(all_status) == 2:
-                    all_status = all_status[1]
-                else:
-                    all_status = None
+            if i == 0 and len(row.text) == 2:
+                all_status = row.text[1]
+                continue
 
             if i == 1:
                 link_tag = find_tag(row, 'a')
@@ -162,26 +159,23 @@ def pep(session):
             )
         re_text = re.search(pattern, dl.text)
         status = None
+
         if re_text:
             status = re_text.group('status')
+
         if all_status and EXPECTED_STATUS[all_status] != status:
-            if status == 'April Fool!':
-                logging.info(
-                    f'Апрельская шутка!:\n{link}\n'
-                    f'Статус в карточке: {status}\n'
-                )
-            else:
-                logging.info(
-                    f'Несовпадающие статусы:\n{link}\n'
-                    f'Статус в карточке: {status}\n'
-                    f'Ожидаемый статус: {EXPECTED_STATUS[all_status]}'
-                )
-        elif not all_status and status not in ('Active', 'Draft'):
+            logging.info(
+                f'Несовпадающие статусы:\n{link}\n'
+                f'Статус в карточке: {status}\n'
+                f'Ожидаемый статус: {EXPECTED_STATUS[all_status]}'
+            )
+        if not all_status and status not in ('Active', 'Draft'):
             logging.info(
                 f'Несовпадающие статусы:\n{link}\n'
                 f'Статус в карточке: {status}\n'
                 f'Ожидаемые статусы: ["Active", "Draft"]'
             )
+
         pep_count += 1
         status_count[status] += 1
 
