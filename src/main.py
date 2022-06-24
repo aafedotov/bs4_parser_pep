@@ -1,25 +1,19 @@
-import re
 import logging
-import warnings
-
-
+import re
 from urllib.parse import urljoin
-from configs import configure_argument_parser, configure_logging
-from outputs import control_output
-from utils import get_response, find_tag
 
 import requests_cache
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
+from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS
-
-
-warnings.filterwarnings("ignore")
+from outputs import control_output
+from utils import get_response, find_tag
 
 
 def whats_new(session):
-
+    """Парсер статей по нововведениям в питон."""
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     response = get_response(session, whats_new_url)
 
@@ -54,7 +48,7 @@ def whats_new(session):
 
 
 def latest_versions(session):
-
+    """Парсер текущих версий питона с описанием."""
     response = get_response(session, MAIN_DOC_URL)
     if response is None:
         return
@@ -89,7 +83,7 @@ def latest_versions(session):
 
 
 def download(session):
-
+    """Парсер, скачивающий документацию."""
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     response = get_response(session, downloads_url)
     if response is None:
@@ -117,7 +111,7 @@ def download(session):
 
 
 def pep(session):
-
+    """Парсер статусов PEP."""
     response = get_response(session, PEP_URL)
     if response is None:
         return
@@ -195,7 +189,7 @@ MODE_TO_FUNCTION = {
 
 
 def main():
-
+    """Финальное задание первого спринта по Парсерам. Автор: Федотов Андрей."""
     configure_logging()
     logging.info('Парсер запущен!')
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())

@@ -1,13 +1,14 @@
-import datetime as dt
 import csv
+import datetime as dt
 import logging
 
 from prettytable import PrettyTable
+
 from constants import BASE_DIR, DATETIME_FORMAT
 
 
 def control_output(results, cli_args):
-
+    """Выбираем обработчик вывода в зависимости от входного аргумента."""
     output = cli_args.output
     if output == 'pretty':
         pretty_output(results)
@@ -18,13 +19,13 @@ def control_output(results, cli_args):
 
 
 def default_output(results):
-
+    """Вывод в консоль."""
     for row in results:
         print(*row)
 
 
 def pretty_output(results):
-
+    """Вывод в консоль в табличном виде."""
     table = PrettyTable()
     table.field_names = results[0]
     table.align = 'l'
@@ -33,7 +34,7 @@ def pretty_output(results):
 
 
 def file_output(results, cli_args):
-
+    """Вывод в csv."""
     results_dir = BASE_DIR / 'results'
     results_dir.mkdir(exist_ok=True)
 
