@@ -8,4 +8,3 @@ class NoneRequestException(Exception):
 
     """Вызывается, когда пришел пустой ответ от сервера."""
     pass
-

@@ -1,7 +1,7 @@
 import logging
 import re
-from urllib.parse import urljoin
 from collections import defaultdict
+from urllib.parse import urljoin
 
 import requests_cache
 from bs4 import BeautifulSoup
@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
 from constants import (
-    BASE_DIR, MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS, WHATS_NEW_URL,
+    MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS, WHATS_NEW_URL,
     DOWNLOADS_URL, DOWNLOADS_DIR
 )
 from outputs import control_output
