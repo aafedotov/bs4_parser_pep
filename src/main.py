@@ -1,25 +1,25 @@
 import logging
 import re
 from urllib.parse import urljoin
+from collections import defaultdict
 
 import requests_cache
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import BASE_DIR, MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS
+from constants import (
+    BASE_DIR, MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS, WHATS_NEW_URL,
+    DOWNLOADS_URL, DOWNLOADS_DIR
+)
 from outputs import control_output
 from utils import get_response, find_tag
 
 
 def whats_new(session):
     """Парсер статей по нововведениям в питон."""
-    whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
-    response = get_response(session, whats_new_url)
 
-    if response is None:
-        return
-
+    response = get_response(session, WHATS_NEW_URL)
     soup = BeautifulSoup(response.text, features='lxml')
 
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
@@ -32,12 +32,8 @@ def whats_new(session):
     for section in tqdm(sections_by_python, desc='Parsing'):
         version_a_tag = find_tag(section, 'a')
         href = version_a_tag['href']
-        version_link = urljoin(whats_new_url, href)
+        version_link = urljoin(WHATS_NEW_URL, href)
         response = get_response(session, version_link)
-
-        if response is None:
-            continue
-
         soup = BeautifulSoup(response.text, features='lxml')
         h1 = find_tag(soup, 'h1')
         dl = find_tag(soup, 'dl')
@@ -49,10 +45,8 @@ def whats_new(session):
 
 def latest_versions(session):
     """Парсер текущих версий питона с описанием."""
-    response = get_response(session, MAIN_DOC_URL)
-    if response is None:
-        return
 
+    response = get_response(session, MAIN_DOC_URL)
     soup = BeautifulSoup(response.text, features='lxml')
 
     sidebar = find_tag(soup, 'div', attrs={'class': 'sphinxsidebarwrapper'})
@@ -84,11 +78,8 @@ def latest_versions(session):
 
 def download(session):
     """Парсер, скачивающий документацию."""
-    downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
-    response = get_response(session, downloads_url)
-    if response is None:
-        return
 
+    response = get_response(session, DOWNLOADS_URL)
     soup = BeautifulSoup(response.text, features='lxml')
 
     urls_table = find_tag(soup, 'table', attrs={'class': 'docutils'})
@@ -96,11 +87,11 @@ def download(session):
         urls_table, 'a', {'href': re.compile(r'.+pdf-a4\.zip$')}
     )
     pdf_a4_link = pdf_a4_tag['href']
-    archive_url = urljoin(downloads_url, pdf_a4_link)
+    archive_url = urljoin(DOWNLOADS_URL, pdf_a4_link)
     filename = archive_url.split('/')[-1]
-    downloads_dir = BASE_DIR / 'downloads'
-    downloads_dir.mkdir(exist_ok=True)
-    archive_path = downloads_dir / filename
+
+    DOWNLOADS_DIR.mkdir(exist_ok=True)
+    archive_path = DOWNLOADS_DIR / filename
 
     response = session.get(archive_url, verify=False)
 
@@ -112,20 +103,16 @@ def download(session):
 
 def pep(session):
     """Парсер статусов PEP."""
-    response = get_response(session, PEP_URL)
-    if response is None:
-        return
 
+    response = get_response(session, PEP_URL)
     result = [('Статус', 'Количество')]
     soup = BeautifulSoup(response.text, features='lxml')
+
     all_tables = soup.find('section', id='numerical-index')
     all_tables = all_tables.find_all('tr')
     pep_count = 0
-    status_count = {
-        'Active': 0, 'Draft': 0, 'Final': 0, 'Provisional': 0,
-        'Rejected': 0, 'Superseded': 0, 'Withdrawn': 0, 'Deferred': 0,
-        'April Fool!': 0, 'Accepted': 0
-    }
+
+    status_count = defaultdict(int)
 
     for table in tqdm(all_tables, desc='Parsing'):
 
@@ -157,7 +144,7 @@ def pep(session):
         if re_text:
             status = re_text.group('status')
 
-        if all_status and EXPECTED_STATUS[all_status] != status:
+        if all_status and EXPECTED_STATUS.get(all_status) != status:
             logging.info(
                 f'Несовпадающие статусы:\n{link}\n'
                 f'Статус в карточке: {status}\n'
@@ -173,10 +160,9 @@ def pep(session):
         pep_count += 1
         status_count[status] += 1
 
-    for status in status_count:
-        result.append((status, status_count[status]))
-
+    result.extend([(status, status_count[status]) for status in status_count])
     result.append(('Total', pep_count))
+
     return result
 
 

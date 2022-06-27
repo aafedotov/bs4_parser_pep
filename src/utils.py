@@ -1,7 +1,7 @@
 import logging
 
 from requests import RequestException
-from exceptions import ParserFindTagException
+from exceptions import ParserFindTagException, NoneRequestException
 
 
 def get_response(session, url):
@@ -9,6 +9,12 @@ def get_response(session, url):
     try:
         response = session.get(url, verify=False)
         response.encoding = 'utf-8'
+        if response is None:
+            logging.error(
+                f'Пустой ответ при загрузке страницы {url}',
+                stack_info=True
+            )
+            raise NoneRequestException('Пустой ответ от сервера')
         return response
     except RequestException:
         logging.exception(
