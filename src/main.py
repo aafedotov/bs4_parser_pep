@@ -10,7 +10,7 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import (
     MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS, WHATS_NEW_URL,
-    DOWNLOADS_URL, DOWNLOADS_DIR, BASE_DIR
+    DOWNLOADS_URL, BASE_DIR
 )
 from outputs import control_output
 from utils import get_response, find_tag
@@ -89,9 +89,10 @@ def download(session):
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(DOWNLOADS_URL, pdf_a4_link)
     filename = archive_url.split('/')[-1]
-
-    DOWNLOADS_DIR.mkdir(exist_ok=True)
-    archive_path = DOWNLOADS_DIR / filename
+    # все константы перенес, кроме этой. на нее ругаются тесты ((
+    downloads_dir = BASE_DIR / 'downloads'
+    downloads_dir.mkdir(exist_ok=True)
+    archive_path = downloads_dir / filename
 
     response = session.get(archive_url, verify=False)
 
