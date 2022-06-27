@@ -10,7 +10,7 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import (
     MAIN_DOC_URL, PEP_URL, EXPECTED_STATUS, WHATS_NEW_URL,
-    DOWNLOADS_URL, DOWNLOADS_DIR
+    DOWNLOADS_URL, DOWNLOADS_DIR, BASE_DIR
 )
 from outputs import control_output
 from utils import get_response, find_tag
